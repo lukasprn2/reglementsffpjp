@@ -2,126 +2,193 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arbitre Pétanque Pro</title>
-
 <link rel="manifest" href="manifest.json">
-
 <style>
-body { font-family: Arial; margin:0; background:#111; color:#fff;}
-nav { background:#000; padding:10px; text-align:center;}
-nav button { margin:5px; padding:10px; }
-.section { display:none; padding:20px;}
-.active { display:block;}
-.card { background:#222; padding:15px; margin:10px 0; border-radius:10px;}
-.good { color:lightgreen;}
-.bad { color:red;}
+  body { font-family: Arial; margin:0; background:#111; color:#fff; }
+  nav { background:#000; padding:10px; text-align:center; position:sticky; top:0; z-index:10; }
+  nav button { margin:5px; padding:10px 14px; background:#333; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
+  nav button:hover { background:#555; }
+  .section { display:none; padding:20px; }
+  .active { display:block; }
+  .card { background:#222; padding:15px; margin:10px 0; border-radius:10px; white-space:pre-wrap; line-height:1.6; }
+  .card b { color:#f0c040; font-size:15px; }
+  .good { color:lightgreen; font-size:18px; }
+  .bad { color:tomato; font-size:18px; }
+  .tabs { display:flex; gap:10px; margin-bottom:15px; }
+  .tab { padding:8px 16px; background:#333; border:none; color:#fff; border-radius:6px; cursor:pointer; }
+  .tab.active-tab { background:#f0c040; color:#111; font-weight:bold; }
+  input { padding:10px; width:calc(100% - 22px); margin:10px 0; border-radius:8px; border:none; background:#333; color:#fff; font-size:15px; }
+  button.action { padding:10px 20px; margin:5px; background:#f0c040; color:#111; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:14px; }
+  button.action:hover { background:#d4a800; }
+  #rescas, #resultat { margin-top:10px; font-size:20px; min-height:30px; }
+  #cas, #question { font-size:16px; margin:15px 0; line-height:1.5; }
+  .score { font-size:14px; color:#aaa; margin-bottom:10px; }
+  #erreur { color:tomato; padding:20px; font-size:16px; }
 </style>
 </head>
-
 <body>
 
 <nav>
-<button onclick="show('cours')">📚 Articles</button>
-<button onclick="show('exam')">🎓 Examen</button>
-<button onclick="show('simu')">⚖️ Simulation</button>
+  <button onclick="show('cours')">📚 Articles</button>
+  <button onclick="show('exam')">🎓 Examen</button>
+  <button onclick="show('simu')">⚖️ Simulation</button>
 </nav>
 
 <!-- ARTICLES -->
 <div id="cours" class="section active">
-<h2>📚 Règlements</h2>
-<div id="articles"></div>
+  <h2>📚 Règlements</h2>
+  <div class="tabs">
+    <button class="tab active-tab" onclick="changerSport('petanque', this)">🎯 Pétanque</button>
+    <button class="tab" onclick="changerSport('provencal', this)">🏆 Provençal</button>
+  </div>
+  <div id="erreur"></div>
+  <div id="articles"></div>
 </div>
 
 <!-- EXAMEN -->
 <div id="exam" class="section">
-<h2>🎓 Examen officiel</h2>
-<p id="question"></p>
-<input id="rep">
-<button onclick="valider()">Valider</button>
-<p id="resultat"></p>
+  <h2>🎓 Examen officiel</h2>
+  <div class="score" id="scoreExam">Question 1 / ...</div>
+  <p id="question"></p>
+  <input id="rep" placeholder="Votre réponse..." onkeydown="if(event.key==='Enter') valider()">
+  <br>
+  <button class="action" onclick="valider()">Valider ✅</button>
+  <p id="resultat"></p>
 </div>
 
 <!-- SIMULATION -->
 <div id="simu" class="section">
-<h2>⚖️ Cas arbitre</h2>
-<p id="cas"></p>
-<button onclick="repond(true)">Bonne décision</button>
-<button onclick="repond(false)">Mauvaise décision</button>
-<p id="rescas"></p>
+  <h2>⚖️ Cas arbitre</h2>
+  <div class="score" id="scoreSim">Cas 1 / ...</div>
+  <p id="cas"></p>
+  <button class="action" onclick="repond(true)">✅ Bonne décision</button>
+  <button class="action" onclick="repond(false)">❌ Mauvaise décision</button>
+  <p id="rescas"></p>
 </div>
 
 <script>
+  let data = {};
+  let sportActuel = 'petanque';
 
-let data = {};
+  // Détecte le chemin de base pour GitHub Pages
+  const base = window.location.pathname.replace(/\/[^/]*$/, '') + '/';
 
-// CHARGER LES ARTICLES
-fetch("reglements.json")
-.then(res => res.json())
-.then(json => {
-data = json;
-afficherArticles();
-});
+  fetch(base + 'reglements.json')
+    .then(res => {
+      if (!res.ok) throw new Error('Fichier introuvable (HTTP ' + res.status + ')');
+      return res.json();
+    })
+    .then(json => {
+      data = json;
+      afficherArticles();
+    })
+    .catch(err => {
+      document.getElementById('erreur').textContent = '⚠️ Erreur de chargement : ' + err.message;
+    });
 
-function afficherArticles(){
-let div = document.getElementById("articles");
+  function afficherArticles() {
+    const div = document.getElementById('articles');
+    div.innerHTML = '';
+    const articles = data[sportActuel];
+    if (!articles) return;
+    articles.forEach(a => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = '<b>' + a.article + ' — ' + a.titre + '</b>\n\n' + a.contenu;
+      div.appendChild(el);
+    });
+  }
 
-data.petanque.forEach(a => {
-let el = document.createElement("div");
-el.className="card";
-el.innerHTML = "<b>"+a.article+" - "+a.titre+"</b><br>"+a.contenu;
-div.appendChild(el);
-});
-}
+  function changerSport(sport, btn) {
+    sportActuel = sport;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active-tab'));
+    btn.classList.add('active-tab');
+    afficherArticles();
+  }
 
-// NAVIGATION
-function show(id){
-document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-document.getElementById(id).classList.add('active');
-}
+  // NAVIGATION
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
 
-// EXAMEN
-let questions = [
-{q:"Distance du but ?", a:"6 à 10 mètres"},
-{q:"Score pour gagner ?", a:"13"}
-];
+  // EXAMEN
+  const questions = [
+    { q: "Quelle est la distance min/max du but pour les Seniors en pétanque ?", a: "6" },
+    { q: "Combien de points faut-il pour gagner une partie ?", a: "13" },
+    { q: "Combien de boules par joueur en triplette ?", a: "2" },
+    { q: "Combien de boules par joueur en doublette ?", a: "3" },
+    { q: "Quel est le diamètre minimum d'une boule réglementaire ?", a: "7" },
+    { q: "Quel est le poids minimum d'une boule réglementaire (en grammes) ?", a: "650" },
+    { q: "Combien de temps a-t-on pour jouer sa boule en pétanque ?", a: "minute" },
+    { q: "Quelle couleur de carton signifie un avertissement officiel ?", a: "jaune" },
+    { q: "Quelle couleur de carton signifie l'exclusion du joueur pour la partie ?", a: "rouge" },
+    { q: "Combien de membres comprend le jury d'un concours ?", a: "3" }
+  ];
+  let iQ = 0, bonnes = 0;
 
-let i=0;
-function charger(){
-document.getElementById("question").innerText = questions[i].q;
-}
-function valider(){
-let val = document.getElementById("rep").value.toLowerCase();
-document.getElementById("resultat").innerText =
-val.includes(questions[i].a.toLowerCase()) ? "✅" : "❌";
-i=(i+1)%questions.length;
-charger();
-}
-charger();
+  function chargerQuestion() {
+    document.getElementById('scoreExam').textContent = 'Question ' + (iQ + 1) + ' / ' + questions.length;
+    document.getElementById('question').textContent = questions[iQ].q;
+    document.getElementById('rep').value = '';
+    document.getElementById('resultat').textContent = '';
+  }
 
-// SIMULATION
-let cas = [
-{q:"Le joueur mord le cercle", ok:false},
-{q:"Le but sort du terrain", ok:true}
-];
+  function valider() {
+    const val = document.getElementById('rep').value.toLowerCase().trim();
+    const correct = val.includes(questions[iQ].a.toLowerCase());
+    if (correct) bonnes++;
+    document.getElementById('resultat').innerHTML = correct
+      ? '<span class="good">✅ Correct !</span>'
+      : '<span class="bad">❌ Mauvaise réponse. (Attendu : ' + questions[iQ].a + ')</span>';
+    iQ = (iQ + 1) % questions.length;
+    if (iQ === 0) {
+      setTimeout(() => {
+        alert('Fin de l\'examen ! Score : ' + bonnes + ' / ' + questions.length);
+        bonnes = 0;
+        chargerQuestion();
+      }, 1500);
+    } else {
+      setTimeout(chargerQuestion, 1500);
+    }
+  }
+  chargerQuestion();
 
-let c=0;
-function loadCas(){
-document.getElementById("cas").innerText = cas[c].q;
-}
-function repond(ans){
-document.getElementById("rescas").innerText =
-(ans===cas[c].ok)?"✅ Bonne décision":"❌ Mauvaise";
-c=(c+1)%cas.length;
-loadCas();
-}
-loadCas();
+  // SIMULATION
+  const cas = [
+    { q: "Un joueur lance sa boule avec un pied en dehors du cercle", ok: false, explication: "Faute : les pieds doivent rester dans le cercle jusqu'à ce que la boule touche le sol." },
+    { q: "Le but sort du terrain en cours de mène", ok: true, explication: "Le but est nul si il sort entièrement du terrain autorisé. C'est une bonne décision de l'annuler." },
+    { q: "Un joueur ramasse sa boule avant la fin de la mène", ok: false, explication: "Faute : il est interdit de ramasser les boules jouées avant la fin de la mène." },
+    { q: "L'adversaire mesure le point avec son pied", ok: false, explication: "Faute : il est interdit d'effectuer des mesures avec les pieds." },
+    { q: "Un joueur joue la mauvaise boule par erreur", ok: true, explication: "Avertissement mais la boule est valable. Elle doit être remplacée immédiatement." },
+    { q: "Le but est déplacé par le vent et n'a pas été marqué — l'arbitre ne peut pas le remettre en place", ok: true, explication: "Correct : sans marquage, aucune réclamation n'est admise et l'arbitre statue sur l'emplacement actuel." },
+    { q: "L'équipe absente 10 minutes après le tirage au sort est éliminée", ok: false, explication: "Non : elle reçoit une pénalité d'un point. L'élimination intervient après 30 minutes d'absence totale." },
+    { q: "Un joueur peut quitter le terrain sans autorisation de l'arbitre", ok: false, explication: "Faute : aucun joueur ne peut s'absenter sans autorisation d'un arbitre." }
+  ];
+  let iC = 0;
 
-// PWA
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('sw.js');
-}
+  function loadCas() {
+    document.getElementById('scoreSim').textContent = 'Cas ' + (iC + 1) + ' / ' + cas.length;
+    document.getElementById('cas').textContent = cas[iC].q;
+    document.getElementById('rescas').textContent = '';
+  }
 
+  function repond(ans) {
+    const correct = (ans === cas[iC].ok);
+    document.getElementById('rescas').innerHTML = correct
+      ? '<span class="good">✅ Bonne décision !</span><br><small>' + cas[iC].explication + '</small>'
+      : '<span class="bad">❌ Mauvaise décision</span><br><small>' + cas[iC].explication + '</small>';
+    iC = (iC + 1) % cas.length;
+    setTimeout(loadCas, 2500);
+  }
+  loadCas();
+
+  // PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(base + 'sw.js');
+  }
 </script>
-
 </body>
 </html>
