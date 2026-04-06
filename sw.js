@@ -1,4 +1,4 @@
-const VERSION = "v1.0.0"; // 👈 CHANGE JUSTE ÇA pour forcer une mise à jour
+const VERSION = "v1.0.1"; // 👈 CHANGE JUSTE ÇA pour forcer une mise à jour
 
 const CACHE_NAME = "petanque-cache-" + VERSION;
 
