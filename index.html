@@ -2,65 +2,76 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Règlement Pétanque</title>
+<title>Arbitre Pétanque Pro</title>
+
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2c3e50">
+
 <style>
-body { font-family: Arial; margin:0; background:#f4f4f4;}
-nav { background:#2c3e50; padding:10px;}
-nav button { margin:5px; padding:10px;}
+body { font-family: Arial; margin:0; background:#111; color:#fff;}
+nav { background:#000; padding:10px; text-align:center;}
+nav button { margin:5px; padding:10px; }
 .section { display:none; padding:20px;}
 .active { display:block;}
-.card { background:white; padding:15px; margin:10px 0; border-radius:10px;}
+.card { background:#222; padding:15px; margin:10px 0; border-radius:10px;}
+.good { color:lightgreen;}
+.bad { color:red;}
 </style>
 </head>
 
 <body>
 
 <nav>
-<button onclick="show('cours')">📖 Cours</button>
-<button onclick="show('quiz')">🧠 Quiz</button>
-<button onclick="show('cas')">⚖️ Cas pratiques</button>
+<button onclick="show('cours')">📚 Articles</button>
+<button onclick="show('exam')">🎓 Examen</button>
+<button onclick="show('simu')">⚖️ Simulation</button>
 </nav>
 
+<!-- ARTICLES -->
 <div id="cours" class="section active">
-<h2>📖 Articles</h2>
+<h2>📚 Règlements</h2>
 <div id="articles"></div>
 </div>
 
-<div id="quiz" class="section">
-<h2>🧠 Quiz</h2>
-<p id="q"></p>
-<input id="a">
-<button onclick="check()">Valider</button>
-<p id="res"></p>
+<!-- EXAMEN -->
+<div id="exam" class="section">
+<h2>🎓 Examen officiel</h2>
+<p id="question"></p>
+<input id="rep">
+<button onclick="valider()">Valider</button>
+<p id="resultat"></p>
 </div>
 
-<div id="cas" class="section">
+<!-- SIMULATION -->
+<div id="simu" class="section">
 <h2>⚖️ Cas arbitre</h2>
-<p id="case"></p>
-<button onclick="answerCase(true)">Décision correcte</button>
-<button onclick="answerCase(false)">Décision incorrecte</button>
-<p id="caseRes"></p>
+<p id="cas"></p>
+<button onclick="repond(true)">Bonne décision</button>
+<button onclick="repond(false)">Mauvaise décision</button>
+<p id="rescas"></p>
 </div>
 
 <script>
 
-// ARTICLES (exemple, on va compléter ensuite)
-const articles = [
-"Art 1 : Formation des équipes",
-"Art 2 : Caractéristiques des boules",
-"Art 3 : But valable",
-];
+let data = {};
 
-// AFFICHAGE ARTICLES
-let container = document.getElementById("articles");
-articles.forEach(a => {
-let div = document.createElement("div");
-div.className="card";
-div.innerText = a;
-container.appendChild(div);
+// CHARGER LES ARTICLES
+fetch("reglements.json")
+.then(res => res.json())
+.then(json => {
+data = json;
+afficherArticles();
 });
+
+function afficherArticles(){
+let div = document.getElementById("articles");
+
+data.petanque.forEach(a => {
+let el = document.createElement("div");
+el.className="card";
+el.innerHTML = "<b>"+a.article+" - "+a.titre+"</b><br>"+a.contenu;
+div.appendChild(el);
+});
+}
 
 // NAVIGATION
 function show(id){
@@ -68,44 +79,44 @@ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
 document.getElementById(id).classList.add('active');
 }
 
-// QUIZ
-const quiz = [
-{q:"Distance pétanque ?",a:"6-10"},
-{q:"Score ?",a:"13"}
+// EXAMEN
+let questions = [
+{q:"Distance du but ?", a:"6 à 10 mètres"},
+{q:"Score pour gagner ?", a:"13"}
 ];
 
 let i=0;
-function load(){
-document.getElementById("q").innerText = quiz[i].q;
+function charger(){
+document.getElementById("question").innerText = questions[i].q;
 }
-function check(){
-let val = document.getElementById("a").value;
-document.getElementById("res").innerText =
-val.includes(quiz[i].a) ? "✅" : "❌";
-i=(i+1)%quiz.length;
-load();
+function valider(){
+let val = document.getElementById("rep").value.toLowerCase();
+document.getElementById("resultat").innerText =
+val.includes(questions[i].a.toLowerCase()) ? "✅" : "❌";
+i=(i+1)%questions.length;
+charger();
 }
-load();
+charger();
 
-// CAS PRATIQUES
-const cases = [
-{q:"Le but sort du terrain ?", ok:true},
-{q:"Un joueur dépasse le temps ?", ok:true}
+// SIMULATION
+let cas = [
+{q:"Le joueur mord le cercle", ok:false},
+{q:"Le but sort du terrain", ok:true}
 ];
 
 let c=0;
-function loadCase(){
-document.getElementById("case").innerText = cases[c].q;
+function loadCas(){
+document.getElementById("cas").innerText = cas[c].q;
 }
-function answerCase(ans){
-document.getElementById("caseRes").innerText =
-(ans===cases[c].ok)?"✅ Bonne décision":"❌ Mauvaise";
-c=(c+1)%cases.length;
-loadCase();
+function repond(ans){
+document.getElementById("rescas").innerText =
+(ans===cas[c].ok)?"✅ Bonne décision":"❌ Mauvaise";
+c=(c+1)%cas.length;
+loadCas();
 }
-loadCase();
+loadCas();
 
-// SERVICE WORKER
+// PWA
 if ('serviceWorker' in navigator) {
 navigator.serviceWorker.register('sw.js');
 }
